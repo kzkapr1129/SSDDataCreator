@@ -58,7 +58,7 @@ static void onSave(void* userdata,
     // csvの出力
     fp = fopen(data->config->csvFilename.c_str(), "a");
     if (fp) {
-        fprintf(fp, "%s,%s\n", imageFilename.c_str(), xmlFilename.c_str());
+        fprintf(fp, "%s %s\n", imageFilename.c_str(), xmlFilename.c_str());
         fclose(fp);
     }
 }
