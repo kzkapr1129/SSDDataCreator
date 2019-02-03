@@ -1,0 +1,28 @@
+{
+    "input_settings" : {
+        "images" : "images/",
+        "target_ext" : ".png",
+        "labels" : [
+            "back",
+            "raspi-box",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown"
+        ]
+    },
+    "output_settings" : {
+        "csv_filename": "train.csv",
+        "out_images": "out_imagees/",
+        "xml_foldername" : "SSDdata",
+        "xml_databasename": "SSDdata",
+        "xml_annotationname": "SSDdata",
+        "xml_ownername": "nakayama"
+    }
+}
