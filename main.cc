@@ -1,3 +1,4 @@
+#include "AnnoData.h"
 #include "Common.h"
 #include "CanvasWindow.h"
 #include "PalletWindow.h"
@@ -5,13 +6,17 @@
 #include <json-c/json.h>
 #include <sys/stat.h>
 
+static const int ACCESS_FLAG = S_IRGRP | S_IROTH | S_IRUSR | S_IRWXO | S_IRWXU | S_IWOTH;
+
 struct GlobalData {
     Dir* dir;
     Config* config;
     PalletWindow* pallet;
     CanvasWindow* canvas;
 
-    GlobalData() : dir(NULL), config(NULL), pallet(NULL), canvas(NULL) {}
+    int index;
+
+    GlobalData() : dir(NULL), config(NULL), pallet(NULL), canvas(NULL), index(0) {}
 };
 
 static void onClassChanged(void* userdata) {
@@ -30,7 +35,32 @@ static void onSave(void* userdata,
         const std::vector<LabelData>& labels) {
 
     GlobalData* data = static_cast<GlobalData*>(userdata);
-    // TODO
+
+    time_t now = time(NULL);
+    std::string baseFilename = format("%llu_%d", (uint64_t)now, data->index++);
+    std::string imageFilename = data->config->outImages + baseFilename + data->config->outExt;
+    std::string xmlFilename = data->config->outAnnotations + baseFilename + ".xml";
+    std::string xml = AnnoData::genXml(*data->config, img.cols, img.rows, imageFilename, labels);
+    
+    // ソースの画像データを削除
+    remove(filename.c_str());
+
+    // 出力フォルダに画像データを保存
+    cv::imwrite(imageFilename.c_str(), img);
+
+    // 出力フォルダにアノテーション(xml)を保存
+    FILE* fp = fopen(xmlFilename.c_str(), "w");
+    if (fp) {
+        fwrite(xml.c_str(), sizeof(xml.c_str()[0]), xml.length(), fp);
+        fclose(fp);
+    }
+
+    // csvの出力
+    fp = fopen(data->config->csvFilename.c_str(), "a");
+    if (fp) {
+        fprintf(fp, "%s,%s\n", imageFilename.c_str(), xmlFilename.c_str());
+        fclose(fp);
+    }
 }
 
 int loadConfig(Config* config) {
@@ -50,7 +80,8 @@ int loadConfig(Config* config) {
                         if (!strcmp("labels", ckey)) {
                             for (int i = 0; i < json_object_array_length(cval); ++i) {
                                 struct json_object *a = json_object_array_get_idx(cval, i);
-                                config->labels.push_back(json_object_to_json_string(a));
+                                const char* labelText = json_object_get_string(a);
+                                config->labels.push_back(labelText);
                             }
                         }
                     }
@@ -74,6 +105,10 @@ int loadConfig(Config* config) {
                             config->xmlAnnotationName = json_object_get_string(cval);
                         } else if (!strcmp("xml_ownername", ckey)) {
                             config->xmlOwnerName = json_object_get_string(cval);
+                        } else if (!strcmp("out_img_ext", ckey)) {
+                            config->outExt = json_object_get_string(cval);
+                        } else if (!strcmp("out_annotations", ckey)) {
+                            config->outAnnotations = json_object_get_string(cval);
                         }
                     }
                 }
@@ -87,6 +122,16 @@ int loadConfig(Config* config) {
         return -1;
     }
 
+    // データの修正
+    if (config->outImages.back() != '/') {
+        config->outImages += '/';
+    }
+
+    // データの修正
+    if (config->outAnnotations.back() != '/') {
+        config->outAnnotations += '/';
+    }
+
     return 0;
 }
 
@@ -97,6 +142,10 @@ int main() {
     if (loadConfig(&config)) {
         return -1;
     }
+
+    // フォルダの作成
+    mkdir(config.outImages.c_str(), ACCESS_FLAG);
+    mkdir(config.outAnnotations.c_str(), ACCESS_FLAG);
 
     // ディレクトリオブジェクトの生成
     Dir imageDir(config.images, config.ext);

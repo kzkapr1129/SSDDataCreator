@@ -57,3 +57,20 @@ std::string Dir::next() {
     mSeek++;
     return filename;
 }
+
+std::string format(const char* format, ...) {
+    va_list arg;
+    va_start(arg, format);
+    int len = vsnprintf(NULL, 0, format, arg);
+    va_end(arg);
+
+    char* str = (char*)alloca(sizeof(char) * (len + 1));
+    if (str == NULL) {
+        printf("internal error: failed alloca %d\n", len + 1);
+    }
+
+    va_start(arg, format);
+    vsnprintf(str, len + 1, format, arg);
+    va_end(arg);
+    return str;
+}

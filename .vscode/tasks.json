@@ -9,6 +9,7 @@
         "PalletWindow.cc",
         "Common.cc",
         "CanvasWindow.cc",
+        "AnnoData.cc",
         "--std=c++14",
         "-I/usr/local/Cellar/opencv/4.0.1/include/opencv4",
         "-L/usr/local/Cellar/opencv/4.0.1/lib",

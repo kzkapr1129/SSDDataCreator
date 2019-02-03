@@ -1,17 +1,8 @@
 #pragma once
 
+#include "Common.h"
 #include <string>
 #include <opencv2/opencv.hpp>
-
-struct LabelData {
-    int classId;
-    std::string filename;
-    cv::Scalar color;
-    std::string text;
-
-    cv::Point min;
-    cv::Point max;
-};
 
 typedef void (*OnSaveFunc)(void* userdata,
     const std::string& filename,
