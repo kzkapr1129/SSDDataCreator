@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <json-c/json.h>
 #include <sys/stat.h>
+#include <fstream>
 
 static const int ACCESS_FLAG = S_IRGRP | S_IROTH | S_IRUSR | S_IRWXO | S_IRWXU | S_IWOTH;
 
@@ -67,7 +68,7 @@ static void onSave(void* userdata,
     }
 }
 
-int loadConfig(Config* config) {
+static int loadConfig(Config* config) {
     // 設定ファイルの読み込み
     json_object *pobj = json_object_from_file("./config.json");
     if (pobj == NULL) {
@@ -141,6 +142,124 @@ int loadConfig(Config* config) {
     return 0;
 }
 
+static bool copyFile(const std::string& from_filename, const std::string& to_filename) {
+    try {
+        std::ifstream is(from_filename.c_str(), std::ios::in | std::ios::binary );
+        std::ofstream os(to_filename.c_str(), std::ios::out | std::ios::binary );
+
+        // ファイルコピー
+        std::istreambuf_iterator<char> iit(is);
+        std::istreambuf_iterator<char> end;
+        std::ostreambuf_iterator<char> oit(os);
+        std::copy( iit, end, oit );
+    } catch (...) {
+        return false;
+    }
+
+    return true;
+}
+
+static std::string extractFilename(const char* filename) {
+    int len = strlen(filename);
+    if (len <= 1) {
+        return filename;
+    }
+
+    int lastDelpos = -1;
+    for (int i = len-1; i >= 0; i--) {
+        if (filename[i] == '/' || filename[i] == '\\') {
+            lastDelpos = i;
+            break;
+        }
+    }
+
+    if (lastDelpos < 0) {
+        return filename;
+    }
+
+    return &filename[lastDelpos+1];
+}
+
+static void back(const Config& config, CanvasWindow& canvas, PalletWindow& pallet) {
+    FILE* fp_s = fopen(config.csvFilename.c_str(), "r");
+    if (fp_s == NULL) {
+        fprintf(stderr, "failed to back: couldn't open %s\n", config.csvFilename.c_str());
+        return;
+    }
+
+    FILE* fp_d = fopen((config.csvFilename + ".tmp").c_str(), "w");
+    if (fp_d == NULL) {
+        fprintf(stderr, "failed to back: couldn't open %s\n", (config.csvFilename + ".tmp").c_str());
+        fclose(fp_s);
+        return;
+    }
+
+    char imgfilename[255];
+    char xmlfilename[255];
+    std::string prevImgFilename;
+    std::string prevXmlFilename;
+
+    while(fscanf(fp_s, "%s %s\n", imgfilename, xmlfilename) != EOF) {
+        if (0 < prevImgFilename.length() && 0 < prevXmlFilename.length()) {
+            // 別ファイルに書き出し
+            fprintf(fp_d, "%s %s\n", prevImgFilename.c_str(), prevXmlFilename.c_str());
+        }
+
+        prevImgFilename = imgfilename;
+        prevXmlFilename = xmlfilename;
+    }
+
+    fclose(fp_s);
+    fclose(fp_d);
+
+    if (prevImgFilename.length() == 0 || prevXmlFilename.length() == 0) {
+        printf("Since no traindata, couldn't back\n");
+        return;
+    }
+
+    // アノテーションファイル(.xml)の削除
+    if (remove(xmlfilename)) {
+        fprintf(stderr, "failed to back: couldn't remove %s.\n", xmlfilename);
+        return;
+    }
+
+    // 古い教師データ一覧ファイルの削除
+    if (remove(config.csvFilename.c_str())) {
+        fprintf(stderr, "failed to back: couldn't remove %s. please remove %s.\n",
+            config.csvFilename.c_str(), (config.csvFilename + ".tmp").c_str());
+        return;
+    }
+
+    // 新しい教師データ一覧ファイルに置き換える
+    if (!copyFile((config.csvFilename + ".tmp"), config.csvFilename)) {
+        fprintf(stderr, "failed to back: please replace %s to %s.\n",
+                (config.csvFilename + ".tmp").c_str(), config.csvFilename.c_str());
+        return;
+    }
+
+    // tmpの教師データ一覧ファイルの削除
+    if (remove((config.csvFilename + ".tmp").c_str())) {
+        fprintf(stderr, "failed to back: couldn't remove %s. \n", (config.csvFilename + ".tmp").c_str());
+        return;
+    }
+
+    // 教師データの画像データを画像データ一覧フォルダに移動させる
+    std::string dst = config.images + "backed_" + extractFilename(imgfilename);
+    if (!copyFile(imgfilename, dst)) {
+        fprintf(stderr, "failed to back: please move %s to %s\n", imgfilename, config.images.c_str());
+        return;
+    }
+
+
+    // 教師データの画像データを削除
+    if (remove(prevImgFilename.c_str())) {
+        fprintf(stderr, "failed to back: couldn't remove %s. \n", prevImgFilename.c_str());
+        return;
+    }
+
+    printf("back suceess\n");
+}
+
 int main() {
 
     // 設定ファイルの読み込み
@@ -189,6 +308,9 @@ int main() {
         int key = cv::waitKey(1);
         if (key == 27) { // ESC
             break;
+        } else if (key == 127) { // BACK
+            printf("backed");
+            back(config, canvas, pallet);
         }
     }
 
