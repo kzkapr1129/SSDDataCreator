@@ -38,6 +38,10 @@ static void onSave(void* userdata,
 
     time_t now = time(NULL);
     std::string baseFilename = format("%llu_%d", (uint64_t)now, data->index++);
+    if (0 < data->config->outPrefix.length()) {
+        baseFilename = data->config->outPrefix + baseFilename;
+    }
+
     std::string imageFilename = data->config->outImages + baseFilename + data->config->outExt;
     std::string xmlFilename = data->config->outAnnotations + baseFilename + ".xml";
     std::string xml = AnnoData::genXml(*data->config, img.cols, img.rows, imageFilename, labels);
@@ -95,6 +99,8 @@ int loadConfig(Config* config) {
                     } else if (!strcmp("output_settings", pkey)) {
                         if (!strcmp("csv_filename", ckey)) {
                             config->csvFilename = json_object_get_string(cval);
+                        } else if (!strcmp("out_prefix", ckey)) {
+                            config->outPrefix = json_object_get_string(cval);
                         } else if (!strcmp("out_images", ckey)) {
                             config->outImages = json_object_get_string(cval);
                         } else if (!strcmp("xml_foldername", ckey)) {

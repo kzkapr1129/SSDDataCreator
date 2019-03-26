@@ -12,6 +12,7 @@ struct Config {
     std::string outImages;
     std::string outAnnotations;
     std::string csvFilename;
+    std::string outPrefix;
     std::string xmlFolderName;
     std::string xmlDatabaseName;
     std::string xmlAnnotationName;

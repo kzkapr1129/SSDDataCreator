@@ -20,6 +20,7 @@
     "output_settings" : {
         "csv_filename": "train.csv",
         "out_img_ext": ".png",
+        "out_prefix": "",
         "out_images": "out_imagees/",
         "out_annotations": "out_annotations/",
         "xml_foldername" : "SSDdata",
