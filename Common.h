@@ -33,6 +33,7 @@ class Dir {
 public:
     Dir(const std::string& dname, const std::string& ext);
     std::string next();
+    void prev();
 
 private:
     std::vector<std::string> mFilelist;

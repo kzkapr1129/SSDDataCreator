@@ -180,7 +180,7 @@ static std::string extractFilename(const char* filename) {
     return &filename[lastDelpos+1];
 }
 
-static void back(const Config& config, CanvasWindow& canvas, PalletWindow& pallet) {
+static void back(const Config& config, CanvasWindow& canvas, Dir& dir) {
     FILE* fp_s = fopen(config.csvFilename.c_str(), "r");
     if (fp_s == NULL) {
         fprintf(stderr, "failed to back: couldn't open %s\n", config.csvFilename.c_str());
@@ -214,6 +214,7 @@ static void back(const Config& config, CanvasWindow& canvas, PalletWindow& palle
 
     if (prevImgFilename.length() == 0 || prevXmlFilename.length() == 0) {
         printf("Since no traindata, couldn't back\n");
+        remove((config.csvFilename + ".tmp").c_str());
         return;
     }
 
@@ -258,6 +259,9 @@ static void back(const Config& config, CanvasWindow& canvas, PalletWindow& palle
     }
 
     printf("back suceess\n");
+
+    canvas.setImage(dst.c_str());
+    dir.prev();
 }
 
 int main() {
@@ -310,7 +314,7 @@ int main() {
             break;
         } else if (key == 127) { // BACK
             printf("backed");
-            back(config, canvas, pallet);
+            back(config, canvas, imageDir);
         }
     }
 

@@ -58,6 +58,10 @@ std::string Dir::next() {
     return filename;
 }
 
+void Dir::prev() {
+    mSeek--;
+}
+
 std::string format(const char* format, ...) {
     va_list arg;
     va_start(arg, format);
