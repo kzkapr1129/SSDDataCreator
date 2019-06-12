@@ -40,6 +40,8 @@ Dir::Dir(const std::string& name, const std::string& ext) {
             
         } while (dent != NULL);
         
+        std::sort(mFilelist.begin(), mFilelist.end());
+
         closedir(dp);
     }
 
