@@ -18,7 +18,7 @@
         ]
     },
     "output_settings" : {
-        "csv_filename": "train.csv",
+        "csv_filename": "trainval.txt",
         "out_img_ext": ".png",
         "out_prefix": "",
         "out_images": "out_imagees/",
