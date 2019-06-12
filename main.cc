@@ -30,10 +30,29 @@ static void onClassChanged(void* userdata) {
     data->canvas->setClass(classId, color, text);
 }
 
-static void onSave(void* userdata,
+static void correctBrightness(cv::Mat& frame, float bright_scale) {
+    if (bright_scale == 0.0) {
+        return;
+    }
+
+	cv::Mat hsv;
+	cv::cvtColor(frame, hsv, cv::COLOR_BGR2HSV);
+
+	std::vector<cv::Mat> channels;
+	cv::split(hsv, channels);
+	channels[2] *= bright_scale;
+	cv::merge(channels, hsv);
+	cv::cvtColor(hsv, frame, cv::COLOR_HSV2BGR);
+}
+
+static void save(void* userdata,
         const std::string& filename,
         const cv::Mat& img,
-        const std::vector<LabelData>& labels) {
+        const std::vector<LabelData>& labels,
+        float brightnessScale) {
+
+    cv::Mat bimg = img.clone();
+    correctBrightness(bimg, brightnessScale);
 
     GlobalData* data = static_cast<GlobalData*>(userdata);
 
@@ -46,12 +65,9 @@ static void onSave(void* userdata,
     std::string imageFilename = data->config->outImages + baseFilename + data->config->outExt;
     std::string xmlFilename = data->config->outAnnotations + baseFilename + ".xml";
     std::string xml = AnnoData::genXml(*data->config, img.cols, img.rows, imageFilename, labels);
-    
-    // ソースの画像データを削除
-    remove(filename.c_str());
 
     // 出力フォルダに画像データを保存
-    cv::imwrite(imageFilename.c_str(), img);
+    cv::imwrite(imageFilename.c_str(), bimg);
 
     // 出力フォルダにアノテーション(xml)を保存
     FILE* fp = fopen(xmlFilename.c_str(), "w");
@@ -66,6 +82,19 @@ static void onSave(void* userdata,
         fprintf(fp, "%s %s\n", imageFilename.c_str(), xmlFilename.c_str());
         fclose(fp);
     }
+}
+
+static void onSave(void* userdata,
+        const std::string& filename,
+        const cv::Mat& img,
+        const std::vector<LabelData>& labels) {
+
+    // ソースの画像データを削除
+    remove(filename.c_str());
+
+    save(userdata, filename, img, labels, 1.1);
+    save(userdata, filename, img, labels, 0.0);
+    save(userdata, filename, img, labels, 0.9);
 }
 
 static int loadConfig(Config* config) {
@@ -312,9 +341,12 @@ int main() {
         int key = cv::waitKey(1);
         if (key == 27) { // ESC
             break;
-        } else if (key == 127) { // BACK
-            printf("backed");
-            back(config, canvas, imageDir);
+        } if (key == 's') { // s
+            const std::string& filename = imageDir.next();
+            if (filename == "") {
+                break;
+            }
+            canvas.setImage(filename);
         }
     }
 
