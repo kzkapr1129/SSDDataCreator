@@ -98,7 +98,7 @@ static void save(void* userdata,
         fclose(fp);
     }
 
-    cv::Mat debugFrame = img.clone();
+    cv::Mat debugFrame = bimg.clone();
     saveDebug(debugName, debugFrame, labels);
 }
 
