@@ -125,7 +125,7 @@ void CanvasWindow::redraw() {
     cv::imshow(CANVAS_WINDOW_NAME, mWork);
 }
 
-void CanvasWindow::drawLabel(const LabelData& label) const {
+void CanvasWindow::drawLabel(const LabelData& label) {
     int count = 0;
 
     // 始点を描画

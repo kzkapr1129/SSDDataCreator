@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "CanvasWindow.h"
 #include "PalletWindow.h"
+#include "Utility.h"
 #include <opencv2/opencv.hpp>
 #include <json-c/json.h>
 #include <sys/stat.h>
@@ -45,11 +46,25 @@ static void correctBrightness(cv::Mat& frame, float bright_scale) {
 	cv::cvtColor(hsv, frame, cv::COLOR_HSV2BGR);
 }
 
+static void saveDebug(const std::string& frameName, cv::Mat& frame, const std::vector<LabelData>& labels) {
+    auto it = labels.begin();
+    auto end = labels.end();
+    for (; it != end; it++) {
+        const LabelData& data = *it;
+
+        cv::Rect rect(data.min, data.max);
+        cv::rectangle(frame, rect, cv::Scalar(0, 255, 0), 2);
+    }
+
+    cv::imwrite(frameName, frame);
+}
+
 static void save(void* userdata,
         const std::string& filename,
         const cv::Mat& img,
         const std::vector<LabelData>& labels,
-        float brightnessScale) {
+        float brightnessScale,
+        const std::string& debugName) {
 
     cv::Mat bimg = img.clone();
     correctBrightness(bimg, brightnessScale);
@@ -82,6 +97,28 @@ static void save(void* userdata,
         fprintf(fp, "%s %s\n", imageFilename.c_str(), xmlFilename.c_str());
         fclose(fp);
     }
+
+    cv::Mat debugFrame = img.clone();
+    saveDebug(debugName, debugFrame, labels);
+}
+
+static void saveAndRota(void* userdata,
+        const std::string& filename,
+        const cv::Mat& img,
+        const std::vector<LabelData>& labels) {
+
+    const int ANGLES[] = {0, 90, 180, 270};
+    const int NUM_ANGLES = sizeof(ANGLES) / sizeof(ANGLES[0]);
+
+    for (int i = 0; i < NUM_ANGLES; i++) {
+        cv::Mat rotatedFrame;
+        std::vector<LabelData> rotatedLabels;
+        rotate_data(img, labels, rotatedFrame, rotatedLabels, ANGLES[i]);
+
+        save(userdata, filename, rotatedFrame, rotatedLabels, 1.1, std::to_string(ANGLES[i]) + "_11.png");
+        save(userdata, filename, rotatedFrame, rotatedLabels, 0.0, std::to_string(ANGLES[i]) + "_00.png");
+        save(userdata, filename, rotatedFrame, rotatedLabels, 0.9, std::to_string(ANGLES[i]) + "_09.png");
+    }
 }
 
 static void onSave(void* userdata,
@@ -91,10 +128,7 @@ static void onSave(void* userdata,
 
     // ソースの画像データを削除
     remove(filename.c_str());
-
-    save(userdata, filename, img, labels, 1.1);
-    save(userdata, filename, img, labels, 0.0);
-    save(userdata, filename, img, labels, 0.9);
+    saveAndRota(userdata, filename, img, labels);
 }
 
 static int loadConfig(Config* config) {

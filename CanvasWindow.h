@@ -23,7 +23,7 @@ public:
 private:
     static void onMouseEvent(int eventType, int x, int y, int flags, void* userdata);
     void redraw();
-    void drawLabel(const LabelData& label) const;
+    void drawLabel(const LabelData& label);
     void save();
 
     bool mIsNeeded;
