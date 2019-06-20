@@ -46,9 +46,15 @@ void rotate_data(const cv::Mat& frame,
         LabelData data = *it;
 
         cv::Point center(frame.cols/2, frame.rows/2);
-        rotate_point(it->min, data.min, center, angle);
-        rotate_point(it->max, data.max, center, angle);
-        
+
+        cv::Point min, max;
+        rotate_point(it->min, min, center, angle);
+        rotate_point(it->max, max, center, angle);
+        data.min.x = std::min(min.x, max.x);
+        data.min.y = std::min(min.y, max.y);
+        data.max.x = std::max(min.x, max.x);
+        data.max.y = std::max(min.y, max.y);
+
         newLabel.push_back(data);
     }
 }
