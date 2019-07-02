@@ -30,11 +30,29 @@ while True:
 	if ret == False:
 		break
 
-	resized_img = cv2.resize(img, (512, 512))
-	cv2.imwrite("{}/{}_{:06}.png".format(dir, prefix, index), resized_img)
-	index += 1
+	size = img.shape[0:2]
+	max_dim = max(size)
+	min_dim = min(size)
+	unuse_width = int((max_dim-min_dim)/2)
+	if size[0] < size[1]:
+		# 横長
+		top = 0
+		bottom = min_dim
+		left = int(unuse_width)
+		right = int(max_dim-unuse_width)
+		roi = img[top:bottom, left:right]
+		cv2.imwrite("{}/{}_{:06}.png".format(dir, prefix, index), roi)
+		cv2.imshow("frame", cv2.resize(roi, (512, 512)))
+	else:
+		# 縦長
+		top = unuse_width
+		bottom = int(max_dim-unuse_width)
+		right = min_dim
+		left = 0
+		cv2.imwrite("{}/{}_{:06}.png".format(dir, prefix, index), roi)
+		cv2.imshow("frame", cv2.resize(roi, (512, 512)))
 
-	cv2.imshow("frame", resized_img)
+	index += 1
 	cv2.waitKey(1)
 
 
