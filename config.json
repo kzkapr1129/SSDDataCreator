@@ -19,6 +19,7 @@
     },
     "output_settings" : {
         "csv_filename": "trainval.txt",
+        "enable_rota": "true",
         "out_img_ext": ".png",
         "out_prefix": "",
         "out_images": "out_imagees/",

@@ -107,17 +107,21 @@ static void saveAndRota(void* userdata,
         const cv::Mat& img,
         const std::vector<LabelData>& labels) {
 
-    const int ANGLES[] = {0, 90, 180, 270};
-    const int NUM_ANGLES = sizeof(ANGLES) / sizeof(ANGLES[0]);
+    GlobalData* data = static_cast<GlobalData*>(userdata);
 
-    for (int i = 0; i < NUM_ANGLES; i++) {
+    std::vector<int> angles = {0};
+    if (data->config->enableRota) {
+        angles = {0, 90, 180, 270};
+    }
+
+    for (int i = 0; i < angles.size(); i++) {
         cv::Mat rotatedFrame;
         std::vector<LabelData> rotatedLabels;
-        rotate_data(img, labels, rotatedFrame, rotatedLabels, ANGLES[i]);
+        rotate_data(img, labels, rotatedFrame, rotatedLabels, angles[i]);
 
-        save(userdata, filename, rotatedFrame, rotatedLabels, 1.1, std::to_string(ANGLES[i]) + "_11.png");
-        save(userdata, filename, rotatedFrame, rotatedLabels, 0.0, std::to_string(ANGLES[i]) + "_00.png");
-        save(userdata, filename, rotatedFrame, rotatedLabels, 0.9, std::to_string(ANGLES[i]) + "_09.png");
+        save(userdata, filename, rotatedFrame, rotatedLabels, 1.1, std::to_string(angles[i]) + "_11.png");
+        save(userdata, filename, rotatedFrame, rotatedLabels, 0.0, std::to_string(angles[i]) + "_00.png");
+        save(userdata, filename, rotatedFrame, rotatedLabels, 0.9, std::to_string(angles[i]) + "_09.png");
     }
 }
 
@@ -179,6 +183,8 @@ static int loadConfig(Config* config) {
                             config->outExt = json_object_get_string(cval);
                         } else if (!strcmp("out_annotations", ckey)) {
                             config->outAnnotations = json_object_get_string(cval);
+                        } else if (!strcmp("enable_rota", ckey)) {
+                            config->enableRota = json_object_get_boolean(cval);
                         }
                     }
                 }

@@ -17,6 +17,7 @@ struct Config {
     std::string xmlDatabaseName;
     std::string xmlAnnotationName;
     std::string xmlOwnerName;
+    bool enableRota;
 };
 
 struct LabelData {
